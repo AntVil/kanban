@@ -3,104 +3,59 @@ let dropElement = null;
 let dragElementHeight = 0;
 let dragElementIndex = -1;
 
-window.onload = () => {
-    const state = {
-        columns: ["column1", "column2", "column3", "column4"],
-        cards: [
-            {
-                content: "hello world\nabc\nabc",
-                column: 0
-            },
-            {
-                content: "hello world2",
-                column: 0
-            },
-            {
-                content: "hello world3\nabc",
-                column: 0
-            },
-            {
-                content: "hello world3",
-                column: 0
-            },
-            {
-                content: "hello world\nabc\nabc",
-                column: 0
-            },
-            {
-                content: "hello world2",
-                column: 0
-            },
-            {
-                content: "hello world3\nabc",
-                column: 0
-            },
-            {
-                content: "hello world3",
-                column: 0
-            },
-            {
-                content: "hello world\nabc\nabc",
-                column: 0
-            },
-            {
-                content: "hello world2",
-                column: 0
-            },
-            {
-                content: "hello world3\nabc",
-                column: 0
-            },
-            {
-                content: "hello world3",
-                column: 0
-            },
-            {
-                content: "hello world\nabc\nabc",
-                column: 0
-            },
-            {
-                content: "hello world2",
-                column: 0
-            },
-            {
-                content: "hello world3\nabc",
-                column: 0
-            },
-            {
-                content: "hello world3",
-                column: 0
-            },
-            {
-                content: "hello world3\nabc\nabc",
-                column: 0
-            },
-            {
-                content: "hello world3",
-                column: 0
-            },
-            {
-                content: "bar",
-                column: 0
-            },
-            {
-                content: "bye world",
-                column: 2
-            }
-        ]
-    }
+let columnIdCounter;
 
-    window.addEventListener("dragover", (e) => {
-        // prevent drag cancel animation (sadly only cancels inside browser window)
-        e.preventDefault();
-    })
+const defaultState = {
+    columns: [{ id: 0, name: "Todo" }, { id: 1, name: "Abc" }],
+    cards: []
+};
+
+let state;
+
+window.onload = () => {
+    state = JSON.parse(localStorage.getItem("state")) ?? defaultState;
+
+    const cards = [
+        { id: "A0", content: "Content 0" },
+        { id: "A1", content: "Content 1" },
+        { id: "A2", content: "Content 2" },
+        { id: "A3", content: "Content 3" },
+        { id: "A4", content: "Content 4" },
+        { id: "A5", content: "Content 5" },
+        { id: "A6", content: "Content 6" },
+        { id: "A7", content: "Content 7" },
+        { id: "A8", content: "Content 8" },
+        { id: "A9", content: "Content 9" },
+        { id: "A10", content: "Content 10" },
+        { id: "A11", content: "Content 11" },
+    ];
 
     const mainElement = document.querySelector("main");
     const addButtonElement = mainElement.querySelector("button");
 
+    columnIdCounter = state.columns.reduce((maxId, c) => Math.max(c.id, maxId), 0);
+
+    // MARK: add new ids
+    const oldIds = new Set(state.cards.map((c) => c.id));
+    for (const card of cards) {
+        if (oldIds.has(card.id)) {
+            continue;
+        }
+
+        state.cards.push({
+            id: card.id,
+            column: 0
+        })
+    }
+    localStorage.setItem("state", JSON.stringify(state));
+
+    // MARK: create columns
     for (let i = 0; i < state.columns.length; i++) {
         const column = state.columns[i];
-        const columnCards = state.cards.filter((card) => card.column === i);
+
+        const ids = new Set(state.cards.filter((c) => c.column === i).map((c) => c.id));
+
+        const columnCards = cards.filter((card) => ids.has(card.id));
 
         mainElement.insertBefore(
             createColumn(column, columnCards),
@@ -109,14 +64,24 @@ window.onload = () => {
     }
 
     addButtonElement.addEventListener("click", () => {
+        columnIdCounter++;
+        const columnDescription = { id: columnIdCounter, name: "new column" };
         mainElement.insertBefore(
-            createColumn("new column", []),
+            createColumn(columnDescription, []),
             addButtonElement
         );
+
+        state.columns.push(columnDescription);
+        localStorage.setItem("state", JSON.stringify(state));
     });
 }
 
-function createColumn(columnName, columnCards) {
+window.addEventListener("dragover", (e) => {
+    // prevent drag cancel animation (sadly only cancels inside browser window)
+    e.preventDefault();
+});
+
+function createColumn(columnDescription, columnCards) {
     const columnElement = document.createElement("section");
     const columnHeader = document.createElement("input");
     const columnBody = document.createElement("ol");
@@ -124,11 +89,21 @@ function createColumn(columnName, columnCards) {
     const columnDeleteButton = document.createElement("button");
 
     columnHeader.setAttribute("type", "text");
-    columnHeader.setAttribute("value", columnName);
+    columnHeader.setAttribute("value", columnDescription.name);
+    columnHeader.addEventListener("input", () => {
+        // MARK: update column name
+        // NOTE: (`state` must contain a reference to `columnDescription`)
+        columnDescription.name = columnHeader.value;
+        localStorage.setItem("state", JSON.stringify(state));
+    })
     columnDeleteButton.innerText = "Delete Column"
 
-    columnDeleteButton.addEventListener("click", (e) => {
+    columnDeleteButton.addEventListener("click", () => {
         columnElement.remove();
+
+        const index = state.columns.findIndex((c) => c.id === columnDescription.id)
+        state.columns.splice(index, 1);
+        localStorage.setItem("state", JSON.stringify(state));
     });
 
     columnBody.addEventListener("dragover", (e) => {
@@ -174,13 +149,6 @@ function createColumn(columnName, columnCards) {
         dropElement.style.setProperty("--drag-placeholder-index", `${dragElementIndex + 1}`);
         e.dataTransfer.dropEffect = "move";
     });
-    // columnBody.addEventListener("drop", (e) => {
-    //     // e.preventDefault();
-    //     // dropElement.appendChild(dragElement);
-    //     // console.log("drop")
-    //     // dropElement.style.setProperty("--drag-placeholder-height", "");
-    //     // dropElement.style.setProperty("--drag-placeholder-index", "");
-    // });
 
     columnElement.append(columnHeader, columnBody, columnFooter);
     for (const card of columnCards) {
