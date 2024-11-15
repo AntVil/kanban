@@ -1,121 +1,111 @@
 :root {
-    --header-height: 50px;
-    --footer-height: 50px;
-    --body-gap: 5px;
-
-    --column-header-height: 50px;
-    --column-gap: 5px;
-
-    /* compute explicit heights for scrolling */
-    --main-height: calc(100svh - var(--header-height) - var(--footer-height) - 2 * var(--body-gap));
-    --column-body-height: calc(var(--main-height) - var(--column-header-height) - var(--column-gap));
+    --header-height: 80px;
+    --footer-height: 40px;
+    --page-padding: 5px;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
-    color: #eee;
+    color: #EEE;
+    color-scheme: dark;
 }
 
 body {
     display: grid;
     grid-template-rows: var(--header-height) auto var(--footer-height);
-    gap: var(--body-gap);
-    background-color: #333;
+    justify-content: space-between;
     height: 100svh;
-}
-
-h1,
-h6 {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    text-align: center;
-}
-
-main {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 200px;
-    padding: 0 10px;
-    gap: 10px;
-    width: 100%;
-    height: var(--main-height);
-    overflow-x: auto;
-}
-
-button {
-    height: 30px;
-    width: 100%;
-    background-color: #555;
-    color: #111;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-section {
-    display: grid;
-    grid-template-rows: var(--column-header-height) auto;
-    gap: var(--column-gap);
-    background-color: #222;
-    border-radius: 10px;
-}
-
-input {
-    width: 100%;
-    background-color: #0000;
-    border: none;
-    padding: 5px;
-}
-
-ol {
-    --drag-placeholder-index: 0;
-    --drag-placeholder-height: -5px;
-
-    grid-row: 2 / span 1;
-    grid-column: 1 / span 1;
-    z-index: 1;
-    padding: 5px;
-    display: grid;
-    grid-auto-rows: min-content;
-    gap: 5px;
-    overflow-y: auto;
-    height: var(--column-body-height);
-}
-
-/* placeholder */
-ol.dragover::after {
-    grid-row: var(--drag-placeholder-index) / span 1;
-    content: "";
-    height: var(--drag-placeholder-height);
+    padding: var(--page-padding);
     background-color: #666;
-    border-radius: 5px;
-}
-
-li {
-    list-style-type: none;
-    padding: 5px;
-    background-color: #444;
-    border-radius: 5px;
-    cursor: grab;
     overflow: hidden;
 }
 
-/* delete button */
-ol+div {
-    grid-row: 2 / span 1;
-    grid-column: 1 / span 1;
+.kanban-board {
+    --kanban-width: calc(100svw - 10px);
+    --column-width: 200px;
+    /* account also for scrollbar height */
+    --column-height: calc(100svh - var(--header-height) - var(--footer-height) - 2 * var(--page-padding) - 40px);
+    --column-header-height: 30px;
+    --column-body-height: calc(var(--column-height) - var(--column-header-height) - var(--column-vertical-gap));
+    --column-horizontal-gap: 10px;
+    --column-vertical-gap: 5px;
+    --column-padding: 5px;
+    --card-vertical-gap: 5px;
+
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--column-width);
+    gap: var(--column-horizontal-gap);
+    width: var(--kanban-width);
+    overflow-x: scroll;
+    overflow-y: hidden;
+}
+
+.kanban-column {
+    position: relative;
+    display: grid;
+    height: min-content;
+    grid-template-rows: var(--column-header-height) var(--column-body-height);
+    gap: var(--column-vertical-gap);
+    background-color: #333;
+    border-radius: var(--column-padding);
     padding: 5px;
-    display: none;
+
+    &>header {
+        &>input {
+            width: 100%;
+            border: none;
+            background-color: #0000;
+            padding: 5px;
+        }
+    }
+
+    &>section {
+        --placeholder-height: 10px;
+        --placeholder-index: 0;
+
+        display: grid;
+        grid-auto-rows: min-content;
+        gap: var(--card-vertical-gap);
+        overflow-y: auto;
+    }
 
     &>button {
-        position: relative;
-        z-index: 2;
+        display: none;
+        position: absolute;
+        width: 100%;
+        grid-column: 1 / span 1;
+        grid-row: 2 / span 1;
+    }
+
+    &>section:where(:empty):not(.drag-over)+button {
+        display: block;
+    }
+
+    &>section.drag-over::after {
+        content: "";
+        height: var(--placeholder-height);
+        background-color: #555;
+        border-radius: 5px;
+        grid-row: var(--placeholder-index);
     }
 }
 
-ol:not(.dragover):where(:empty, .pseudo-empty)+div {
-    display: initial;
+.kanban-card {
+    background-color: #222;
+    border-radius: 5px;
+    padding: 5px;
+    user-select: none;
+
+    &.dragged {
+        display: none;
+    }
+}
+
+.kanban-append-column {
+    height: 20px;
+    background-color: #444;
+    border: none;
+    border-radius: 5px;
 }
